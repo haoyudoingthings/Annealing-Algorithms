@@ -18,5 +18,5 @@ The precision to which SQA can reproduce quantum mechanical behavior depends on 
 
 ### References
 1. https://doi.org/10.1103/PhysRevB.66.094203
-2. https://doi.org/10.1103/PhysRevX.6.031015 see also: https://doi.org/10.1109/FOCS.2016.81
+2. https://doi.org/10.1103/PhysRevX.6.031015; see also: https://doi.org/10.1109/FOCS.2016.81
 3. https://doi.org/10.1109/ICRC.2017.8123652
