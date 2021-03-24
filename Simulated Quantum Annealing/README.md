@@ -9,6 +9,7 @@ The precision to which SQA can reproduce quantum mechanical behavior depends on 
 ### Notes
 1. For the purpose of simulating QA, a large number of Trotter replicas is essential. <br>
    However, if the goal is to use SQA as an optimization algorithm, many conditions can be relaxed, such as the number of Trotter replicas or the periodic boundary condition.
+2. An implementation of SQA is available at https://github.com/shinmorino/sqaod/wiki
 
 ### Questions
 1. What role does the "temperature" parameter in SQA play? It isn't obvious what it corresponds to in the QA counterpart.
