@@ -9,7 +9,7 @@ The temperature parameter starts off large to allow escape from local minima, an
 1. An implementation of SA is available at http://dx.doi.org/10.17632/y5nybjdshn.1
 
 ### Questions
-1. Are there any real-world applications for which SA is the state-of-the-art heuristic?
+1. Are there any real-world applications for which SA (or some variant of it) is the state-of-the-art heuristic?
 
 ### References
 1. https://en.wikipedia.org/wiki/Simulated_annealing
