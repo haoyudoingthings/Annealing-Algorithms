@@ -13,3 +13,4 @@ Some of the algorithms that are planned to be curated:
 4. Digital Annealing (DA)
 5. Momentum Annealing (MA)
 6. Simulated Bifurcation Machine (SBM)
+7. Parallel Tempering (PT)
