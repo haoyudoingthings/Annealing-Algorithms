@@ -14,3 +14,6 @@ Some of the algorithms that are planned to be curated:
 5. Momentum Annealing (MA)
 6. Simulated Bifurcation Machine (SBM)
 7. Parallel Tempering (PT)
+
+Notes:
+1. To investigate the inner workings of each algorithm, it is paramount for us to have access to the runtime states, energies and parameters. Therefore, a piece of working (not necessarily high-performing) code that is easily modifiable is very important for every algorithm.
