@@ -16,4 +16,6 @@ Some of the algorithms that are planned to be curated:
 7. Parallel Tempering (PT)
 
 Notes:
-1. To investigate the inner workings of each algorithm, it is paramount for us to have access to the runtime states, energies and parameters. Therefore, a piece of working (not necessarily high-performing) code that is easily modifiable is very important for every algorithm.
+1. To investigate the inner workings of each algorithm beyond treating them as blackboxes, it is paramount for us to have access to the runtime states, energies and parameters. Therefore, a piece of working (not necessarily high-performing) code that is easily modifiable is very important for every algorithm.
+2. To benchmark the performance of each algorithm, (i) Number Partitioning and (ii) Max-Cut problems are the most suitable for the rich literatures and natural mapping to Ising (QUBO) formulation. For the best practices behind comparing optimization algorithms, see: https://doi.org/10.1007/s11081-017-9366-1.
+3. Data sets for Max-Cut: http://biqmac.uni-klu.ac.at/biqmaclib.html
