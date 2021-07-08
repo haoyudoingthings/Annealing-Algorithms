@@ -8,7 +8,7 @@ Excerpted from Wikipedia [2]: "The parallel tempering method can be used as a su
 
 ### Notes
 
-(to be filled)
+1. In addition to the number of replicas and their temperature distribution, there is also some freedom in determining the number of local moves between replica exchanges and how the two replicas for replica exchange are chosen.
 
 ### Questions
 
