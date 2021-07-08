@@ -16,5 +16,5 @@ Excerpted from Wikipedia [2]: "The parallel tempering method can be used as a su
 
 ### References
 
-1. https://doi.org/10.1103/PhysRevLett.57.2607; see also: https://doi.org/10.1039/b509983h
+1. https://doi.org/10.1103/PhysRevLett.57.2607; see also: https://doi.org/10.1039/b509983h and https://www.tweag.io/blog/2020-10-28-mcmc-intro-4/
 2. https://en.wikipedia.org/wiki/Parallel_tempering
