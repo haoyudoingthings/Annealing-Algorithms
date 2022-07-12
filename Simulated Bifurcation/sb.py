@@ -1,9 +1,10 @@
 # To add a new cell, type '# %%'
 # To add a new markdown cell, type '# %% [markdown]'
 # %% [markdown]
-# ### Note: Possibility of improvements over the choices of p(t), a0, c0
+# ### Note: Possibility of improvements over the choices of p(t), c0
 # %% [markdown]
 # This notebook aims to showcase Ising solvers running simulated bifurcation.
+# Objective: Minimize J.dot(state).dot(state) + h.dot(state)
 # 
 # References:
 # 1. https://advances.sciencemag.org/content/5/4/eaav2372
@@ -11,206 +12,264 @@
 
 # %%
 import numpy as np
-import numba as nb
-import time
-import matplotlib.pyplot as plt
-
-np.random.seed(0)
-flt = np.float64
 
 
 # %%
-def no_local(Q):
-    """
-    Return a matrix of shape (N+1, M+1) with no local field.
-    See S1 in supplementary materials for sciadv.abe7953 for more details.
-    """
-    new_Q = np.zeros((Q.shape[0]+1, Q.shape[1]+1))
-    new_Q[:-1, :-1] = Q - np.diag(np.diag(Q))
-    new_Q[:-1, -1] = np.diag(Q)
-    return new_Q
-
-
-# %%
-#@nb.njit(parallel=False)
-def one_aSB_run(Q_matrix, PS, dt, Kerr_coef, a0, c0, init_y):
+def one_aSB_run(J, PS, dt, c0, Kerr_coef=1., h=None, init_y=None, sd=None, return_x_history=False):
     """
     One (adiabatic) simulated bifurcation run over the full pump schedule.
+    Angular frequency (a0) is set to 1 and absorbed into PS, dt and c0.
+    Objective: Minimize J.dot(state).dot(state) + h.dot(state)
     
     Parameters:
-        Q_matrix (2-D array of float): The matrix representing the coupling field of the problem.
+        J (2-D array of float): The matrix representing the coupling field of the problem.
         PS (list[float]): The pump strength at each step. Number of iterations is implicitly len(PS).
         dt (float): Time step for the discretized time.
-        Kerr_coef (float): The Kerr coefficient.
-        a0, c0 (float): Positive constants.
-        init_y (1-D array of float): Initial y for perturbation.
+        c0 (float): Positive coupling strength scaling factor.
+        Kerr_coef (float, default=1.): The Kerr coefficient.
+        h (1-D array of float or None, default=None): The vector representing the local field of the problem.
+        init_y (1-D array of float or None, default=None): Initial y. If None, then random numbers between 0.1 and -0.1 are chosen.
+        sd (int or None, default=None): Seed for rng of init_y.
+        return_x_history (bool, default=False): True to return history of x additionally.
     
     Return: final_state (1-D array of float)
     """
     
-    local_flg = False
-    if np.diag(Q_matrix).any():
-        Q = no_local(Q)
-        local_flg = True
-    
-    #np.random.seed(sd)
-    
-    N = Q_matrix.shape[0]
-    x = flt(np.zeros(N))
-    y = flt(init_y.copy())
-    
-    for a in PS:
-        x += a0 * y * dt
-        y -= (Kerr_coef * x**3 + (a0 - a) * x - c0 * Q_matrix.dot(x)) * dt
-        #x_history.append(x.copy()) # for analysis purposes
-    
-    if local_flg:
-        return np.sign(x[:-1]) * np.sign(x[-1])
+    if h is None:
+        j = J
     else:
+        j = np.zeros((J.shape[0]+1, J.shape[1]+1))
+        j[:-1, :-1] = J
+        j[:-1, -1] = 0.5*h
+        j[-1, :-1] = 0.5*h.T
+    
+    x = np.zeros(j.shape[0])
+
+    if init_y is None:
+        np.random.seed(sd)
+        y = np.random.uniform(-0.1, 0.1, j.shape[0])
+    else:
+        y = init_y.copy()
+    
+    if return_x_history:
+        x_history = []
+        for a in PS:
+            x += y * dt
+            y -= (Kerr_coef * x**3 + (1 - a) * x + 2 * c0 * j.dot(x)) * dt
+            x_history.append(x.copy()) # for analysis purposes
+            
+        if h is None:
+            return np.sign(x), x_history
+        else:
+            return np.sign(x[:-1]) * np.sign(x[-1]), x_history
+
+    for a in PS:
+        x += y * dt
+        y -= (Kerr_coef * x**3 + (1 - a) * x + 2 * c0 * j.dot(x)) * dt
+    
+    if h is None:
         return np.sign(x)
+    else:
+        return np.sign(x[:-1]) * np.sign(x[-1])
 
 
 # %%
-Q = np.array([[0., 1.], [1., 0.]])
-n = 2000
-dt = 200/n
-a0 = 0.5
-c0 = 0.3
-PS = [a0/n * i for i in range(n)]
-
-init_y = np.random.uniform(flt(-0.1), flt(0.1), Q.shape[0])
-
-
-# %%
-# Without numba
-x_history = []
-start_time = time.time()
-ans = one_aSB_run(Q, PS, dt, 1., a0, c0, init_y)
-total_time = time.time() - start_time
-print(f'ground state: {ans}; time: {total_time} s')
-
-
-# %%
-x_history = np.asarray(x_history)
-plt.figure(dpi=100)
-plt.scatter(x_history[:, 0], x_history[:, 1], s=.1)
-
-
-# %%
-#@nb.njit(parallel=False)
-def one_bSB_run(Q_matrix, PS, dt, a0, c0, init_y):
+def one_bSB_run(J, PS, dt, c0, h=None, init_y=None, sd=None, return_x_history=False):
     """
     One ballistic simulated bifurcation run over the full pump schedule.
+    Angular frequency (a0) is set to 1 and absorbed into PS, dt and c0.
+    Objective: Minimize J.dot(state).dot(state) + h.dot(state)
     
     Parameters:
-        Q_matrix (2-D array of float): The matrix representing the local and coupling field of the problem.
+        J (2-D array of float): The matrix representing the coupling field of the problem.
         PS (list[float]): The pump strength at each step. Number of iterations is implicitly len(PS).
         dt (float): Time step for the discretized time.
-        a0, c0 (float): Positive constants.
-        init_y (1-D array of float): Initial y.
+        c0 (float): Positive coupling strength scaling factor.
+        h (1-D array of float or None, default=None): The vector representing the local field of the problem.
+        init_y (1-D array of float or None, default=None): Initial y. If None, then random numbers between 0.1 and -0.1 are chosen.
+        sd (int or None, default=None): Seed for rng of init_y.
+        return_x_history (bool, default=False): True to return history of x additionally.
     
     Return: final_state (1-D array of float)
     """
     
-    local_flg = False
-    if np.diag(Q_matrix).any():
-        Q = no_local(Q)
-        local_flg = True
+    if h is None:
+        j = J
+    else:
+        j = np.zeros((J.shape[0]+1, J.shape[1]+1))
+        j[:-1, :-1] = J
+        j[:-1, -1] = 0.5*h
+        j[-1, :-1] = 0.5*h.T
     
-    #np.random.seed(sd)
+    x = np.zeros(j.shape[0])
+
+    if init_y is None:
+        np.random.seed(sd)
+        y = np.random.uniform(-0.1, 0.1, j.shape[0])
+    else:
+        y = init_y.copy()
     
-    N = Q_matrix.shape[0]
-    x = flt(np.zeros(N))
-    y = flt(init_y.copy())
+    if return_x_history:
+        x_history = []
+        for a in PS:
+            x += y * dt
+            y -= ((1 - a) * x + 2 * c0 * j.dot(x)) * dt
+            for i in range(j.shape[0]): # parallelizable
+                if np.abs(x[i]) > 1:
+                    x[i] = np.sign(x[i])
+                    y[i] = 0
+            x_history.append(x.copy()) # for analysis purposes
+
+        if h is None:
+            return np.sign(x), x_history
+        else:
+            return np.sign(x[:-1]) * np.sign(x[-1]), x_history
     
     for a in PS:
-        x += a0 * y * dt
-        y -= ((a0 - a) * x - c0 * Q_matrix.dot(x)) * dt # pump increases from 0 to a0 linearly
-        for i in range(N): # parallelizable
+        x += y * dt
+        y -= ((1 - a) * x + 2 * c0 * j.dot(x)) * dt
+        for i in range(j.shape[0]): # parallelizable
             if np.abs(x[i]) > 1:
                 x[i] = np.sign(x[i])
                 y[i] = 0
-        #x_history.append(x.copy()) # for analysis purposes
-    
-    if local_flg:
-        return np.sign(x[:-1]) * np.sign(x[-1])
-    else:
+
+    if h is None:
         return np.sign(x)
+    else:
+        return np.sign(x[:-1]) * np.sign(x[-1])
 
 
 # %%
-# Without numba
-x_history = []
-start_time = time.time()
-ans = one_bSB_run(Q, PS, dt, a0, c0, init_y)
-total_time = time.time() - start_time
-print(f'ground state: {ans}; time: {total_time} s')
-
-
-# %%
-x_history = np.asarray(x_history)
-plt.figure(dpi=100)
-plt.scatter(x_history[:, 0], x_history[:, 1], s=.1)
-
-
-# %%
-#@nb.njit(parallel=False)
-def one_dSB_run(Q_matrix, PS, dt, a0, c0, init_y):
+def one_dSB_run(J, PS, dt, c0, h=None, init_y=None, sd=None, return_x_history=False):
     """
     One discrete simulated bifurcation run over the full pump schedule.
+    Angular frequency (a0) is set to 1 and absorbed into PS, dt and c0.
+    Objective: Minimize J.dot(state).dot(state) + h.dot(state)
     
     Parameters:
-        Q_matrix (2-D array of float): The matrix representing the local and coupling field of the problem.
+        J (2-D array of float): The matrix representing the coupling field of the problem.
         PS (list[float]): The pump strength at each step. Number of iterations is implicitly len(PS).
         dt (float): Time step for the discretized time.
-        a0, c0 (float): Positive constants.
-        init_y (1-D array of float): Initial y.
+        c0 (float): Positive coupling strength scaling factor.
+        h (1-D array of float or None, default=None): The vector representing the local field of the problem.
+        init_y (1-D array of float or None, default=None): Initial y. If None, then random numbers between 0.1 and -0.1 are chosen.
+        sd (int or None, default=None): Seed for rng of init_y.
+        return_x_history (bool, default=False): True to return history of x additionally.
     
     Return: final_state (1-D array of float)
     """
     
-    local_flg = False
-    if np.diag(Q_matrix).any():
-        Q = no_local(Q)
-        local_flg = True
+    if h is None:
+        j = J
+    else:
+        j = np.zeros((J.shape[0]+1, J.shape[1]+1))
+        j[:-1, :-1] = J
+        j[:-1, -1] = 0.5*h
+        j[-1, :-1] = 0.5*h.T
     
-    #np.random.seed(sd)
+    x = np.zeros(j.shape[0])
+
+    if init_y is None:
+        np.random.seed(sd)
+        y = np.random.uniform(-0.1, 0.1, j.shape[0])
+    else:
+        y = init_y.copy()
     
-    N = Q_matrix.shape[0]
-    x = flt(np.zeros(N))
-    y = flt(init_y.copy())
-    
+    if return_x_history:
+        x_history = []
+        for a in PS:
+            x += y * dt
+            y -= ((1 - a) * x + 2 * c0 * j.dot(np.sign(x))) * dt
+            for i in range(j.shape[0]): # parallelizable
+                if np.abs(x[i]) > 1:
+                    x[i] = np.sign(x[i])
+                    y[i] = 0
+            x_history.append(x.copy()) # for analysis purposes
+            
+        if h is None:
+            return np.sign(x), x_history
+        else:
+            return np.sign(x[:-1]) * np.sign(x[-1]), x_history
+
     for a in PS:
-        x += a0 * y * dt
-        y -= ((a0 - a) * x - c0 * Q_matrix.dot(np.sign(x))) * dt
-        for i in range(N): # parallelizable
+        x += y * dt
+        y -= ((1 - a) * x + 2 * c0 * j.dot(np.sign(x))) * dt
+        for i in range(j.shape[0]): # parallelizable
             if np.abs(x[i]) > 1:
                 x[i] = np.sign(x[i])
                 y[i] = 0
-        #x_history.append(x.copy()) # for analysis purposes
-    
-    if local_flg:
-        return np.sign(x[:-1]) * np.sign(x[-1])
-    else:
+
+    if h is None:
         return np.sign(x)
+    else:
+        return np.sign(x[:-1]) * np.sign(x[-1])
 
 
 # %%
-# Without numba
-x_history = []
-start_time = time.time()
-ans = one_dSB_run(Q, PS, dt, a0, c0, init_y)
-total_time = time.time() - start_time
-print(f'ground state: {ans}; time: {total_time} s')
+def main():
+    """
+    A simple showcase
+    """
+    import time
+
+    sd = 7
+
+    num_par = [80, 68, 32, 15, 5]
+    N = len(num_par)
+
+    J = np.outer(num_par, num_par)
+    offset = sum(np.diag(J))
+    np.fill_diagonal(J, 0)
+    h = np.zeros(N)
+
+    norm_coef = np.sqrt(J.shape[0] / (np.sum(J**2) + 0.5 * np.sum(h**2))) # normalization
+    c0 = 0.5 * norm_coef
+    n = 1000
+    dt = 200/n
+    PS = [i/n for i in range(n)]
+
+    # print(f"problem: {J}")
+    # print(f"n: {n}, dt: {dt}, c0: {c0}")
+
+    print(f'number partition: {num_par}')
+    print("simulated bifurcation")
+
+    # x_history_a = []
+    start_time = time.time()
+    ans = one_aSB_run(J, PS, dt, c0, sd=sd)
+    total_time = time.time() - start_time
+    print(f'aSB ground state: {ans}; time: {total_time} s')
+
+    # x_history_a = np.asarray(x_history_a)
+    # plt.figure(dpi=100)
+    # plt.scatter(x_history_a[:, 0], x_history_a[:, 1], s=.1)
+
+
+    # x_history_b = []
+    start_time = time.time()
+    ans = one_bSB_run(J, PS, dt, c0, sd=sd)
+    total_time = time.time() - start_time
+    print(f'bSB ground state: {ans}; time: {total_time} s')
+
+    # x_history_b = np.asarray(x_history_b)
+    # plt.figure(dpi=100)
+    # plt.scatter(x_history_b[:, 0], x_history_b[:, 1], s=.1)
+
+
+    # x_history_d = []
+    start_time = time.time()
+    ans = one_dSB_run(J, PS, dt, c0, sd=sd)
+    total_time = time.time() - start_time
+    print(f'dSB ground state: {ans}; time: {total_time} s')
+
+    # x_history_d = np.asarray(x_history_d)
+    # plt.figure(dpi=100)
+    # plt.scatter(x_history_d[:, 0], x_history_d[:, 1], s=.1)
 
 
 # %%
-x_history = np.asarray(x_history)
-plt.figure(dpi=100)
-plt.scatter(x_history[:, 0], x_history[:, 1], s=.1)
+if __name__ == "__main__":
+    main()
 
 
 # %%
-
-
-
