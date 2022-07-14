@@ -182,7 +182,7 @@ def one_dSB_run(J, PS, dt, c0, h=None, init_y=None, sd=None, return_x_history=Fa
         x += y * dt
         y -= ((1 - a) * x + 2 * c0 * j.dot(np.sign(x))) * dt
         for i in range(j.shape[0]): # parallelizable
-            if np.abs(x[i]) >= 1:
+            if np.abs(x[i]) > 1:
                 x[i] = np.sign(x[i])
                 y[i] = 0
         
