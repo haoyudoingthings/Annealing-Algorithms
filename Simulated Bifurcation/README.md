@@ -6,7 +6,7 @@ Simulated Bifurcation (SB) is an combinatorial optimization method that approxim
 ### Benchmark problem sets
 
 Three MaxCut problem sets:
-1. [Gset](https://web.stanford.edu/~yyye/yyye/Gset/): One source of best known values that I found is [this excel file](https://grafo.etsii.urjc.es/optsicom/maxcut/maxcut_bestvalues.xls) (not complete).
+1. [Gset](https://web.stanford.edu/~yyye/yyye/Gset/): One source of best known values that I found is [this article](https://medium.com/toshiba-sbm/benchmarking-the-max-cut-problem-on-the-simulated-bifurcation-machine-e26e1127c0b0).
 2. [WK2000](https://github.com/hariby/SA-complete-graph): Files and descriptions can be found at [this github repo](https://github.com/hariby/SA-complete-graph).
 3. [Biq Mac](https://biqmac.aau.at/biqmaclib.html): Description of the data set and best known values can be found [here](https://biqmac.aau.at/biqmaclib.pdf).
 
