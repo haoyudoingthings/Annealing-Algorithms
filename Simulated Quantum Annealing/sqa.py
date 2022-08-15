@@ -13,6 +13,7 @@
 
 # %%
 import numpy as np
+from scipy.sparse import block_diag
 
 
 # %%
@@ -38,13 +39,14 @@ def one_SQA_run(J, h, trans_fld_sched, M, T, sd=None, init_state=None, return_pa
     """
     rng = np.random.default_rng(seed=sd)
 
-    if np.any(np.diag(J)):
-        raise ValueError("Diagonal elements of J should be 0")
+    # if np.any(np.diag(J)):
+    #     raise ValueError("Diagonal elements of J should be 0")
 
     # J: block sparse matrices with block size of (N, N)
     N = J.shape[0]
     j = 0.5*(J + J.T) # making sure J is symmetric
-    j = np.kron(np.eye(M), j/M) # block diagonal of J, repeated M times and divided by M
+    # j = np.kron(np.eye(M), j/M) # block diagonal of J, repeated M times and divided by M
+    j = block_diag([j/M]*M) # block diagonal of J, repeated M times and divided by M
     
     h_extended = np.repeat(h/M, M)
 
@@ -59,6 +61,8 @@ def one_SQA_run(J, h, trans_fld_sched, M, T, sd=None, init_state=None, return_pa
     if return_z_hist:
         z_hist = []
     
+    # print(j.shape[0])
+
     for Gamma in trans_fld_sched:
         Jp_coef = -0.5 * T * np.log(np.tanh(Gamma / M / T))
         
