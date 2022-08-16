@@ -68,7 +68,11 @@ def one_SQA_run(J, h, trans_fld_sched, M, T, sd=None, init_state=None, return_pa
         
         # First design (Tohoku)
         for flip in range(N*M): # can be parallelized
-            delta_E = -4 * (j - Jp_coef * Jp_terms)[flip].dot(state) * state[flip] - 2 * h_extended[flip] * state[flip]
+            # delta_E = -4 * j[flip].dot(state)
+            # delta_E -= -4 * Jp_coef * Jp_terms[flip].dot(state)
+            # delta_E += -2 * h_extended[flip]
+            # delta_E *= state[flip]
+            delta_E = -4 * (j[flip] - Jp_coef * Jp_terms[flip]).dot(state) * state[flip] - 2 * h_extended[flip] * state[flip]
             if rng.binomial(1, np.minimum(np.exp(-delta_E/T), 1.)):
                 state[flip] *= -1
 
