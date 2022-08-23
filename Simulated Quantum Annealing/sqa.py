@@ -46,7 +46,7 @@ def one_SQA_run(J, h, trans_fld_sched, M, T, sd=None, init_state=None, return_pa
     N = J.shape[0]
     j = 0.5*(J + J.T) # making sure J is symmetric
     # j = np.kron(np.eye(M), j/M) # block diagonal of J, repeated M times and divided by M
-    j = block_diag([j/M]*M) # block diagonal of J, repeated M times and divided by M
+    j = block_diag([j/M]*M, format='csr') # block diagonal of J, repeated M times and divided by M
     
     h_extended = np.repeat(h/M, M)
 
