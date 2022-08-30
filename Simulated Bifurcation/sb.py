@@ -179,6 +179,7 @@ def one_dSB_run(J, PS, dt, c0, h=None, init_y=None, sd=None, return_x_history=Fa
         x_history = []
     
     for a in PS:
+        # PS = [a0*i/(steps-1) for i in range(steps)]
         y -= ((1 - a) * x + 2 * c0 * j.dot(np.sign(x))) * dt
         x += y * dt
         for i in range(j.shape[0]): # parallelizable
