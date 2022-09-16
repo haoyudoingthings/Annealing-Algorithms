@@ -53,19 +53,13 @@ def one_aSB_run(J, PS, dt, c0, Kerr_coef=1., h=None, init_y=None, sd=None, retur
     
     if return_x_history:
         x_history = []
-        for a in PS:
-            x += y * dt
-            y -= (Kerr_coef * x**3 + (1 - a) * x + 2 * c0 * j.dot(x)) * dt
-            x_history.append(x.copy()) # for analysis purposes
-            
-        if h is None:
-            return np.sign(x), x_history
-        else:
-            return np.sign(x[:-1]) * np.sign(x[-1]), x_history
 
     for a in PS:
         x += y * dt
-        y -= (Kerr_coef * x**3 + (1 - a) * x + 2 * c0 * j.dot(x)) * dt
+        y -= (Kerr_coef * x**3 + (1 - a) * x + 2 * c0 * j @ x) * dt
+        
+        if return_x_history:
+            x_history.append(x.copy()) # for analysis purposes
     
     if h is None:
         return np.sign(x)
@@ -111,27 +105,17 @@ def one_bSB_run(J, PS, dt, c0, h=None, init_y=None, sd=None, return_x_history=Fa
     
     if return_x_history:
         x_history = []
-        for a in PS:
-            x += y * dt
-            y -= ((1 - a) * x + 2 * c0 * j.dot(x)) * dt
-            for i in range(j.shape[0]): # parallelizable
-                if np.abs(x[i]) > 1:
-                    x[i] = np.sign(x[i])
-                    y[i] = 0
-            x_history.append(x.copy()) # for analysis purposes
-
-        if h is None:
-            return np.sign(x), x_history
-        else:
-            return np.sign(x[:-1]) * np.sign(x[-1]), x_history
     
     for a in PS:
         x += y * dt
-        y -= ((1 - a) * x + 2 * c0 * j.dot(x)) * dt
+        y -= ((1 - a) * x + 2 * c0 * j @ x) * dt
         for i in range(j.shape[0]): # parallelizable
             if np.abs(x[i]) > 1:
                 x[i] = np.sign(x[i])
                 y[i] = 0
+        
+        if return_x_history:
+            x_history.append(x.copy()) # for analysis purposes
 
     if h is None:
         return np.sign(x)
@@ -180,7 +164,7 @@ def one_dSB_run(J, PS, dt, c0, h=None, init_y=None, sd=None, return_x_history=Fa
     
     for a in PS:
         # PS = [a0*i/(steps-1) for i in range(steps)]
-        y -= ((1 - a) * x + 2 * c0 * j.dot(np.sign(x))) * dt
+        y -= ((1 - a) * x + 2 * c0 * j @ np.sign(x)) * dt
         x += y * dt
         for i in range(j.shape[0]): # parallelizable
             if np.abs(x[i]) > 1:
